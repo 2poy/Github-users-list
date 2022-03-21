@@ -15,7 +15,7 @@ protocol ListViewDelegate: AnyObject {
 class ListViewController: UIViewController {
 
     
-    private let listPresenter: ListPresenterDelegate = ListPresenter(usersService: UsersService())
+    private let listPresenter: ListPresenterDelegate = ListPresenter()
     private let tableView: UITableView = {
         let tableView = UITableView(frame: .zero, style: .grouped)
         let nib = UINib(nibName: "UserCell", bundle: nil)
@@ -68,8 +68,8 @@ extension ListViewController: UITableViewDataSource {
         guard let userData = listPresenter.getObject(at: indexPath.row) else {
             return cell
         }
-        userCell.topLabel?.text = userData.name
-        userCell.botLabel?.text = userData.name
+        userCell.topLabel?.text = userData.login
+        userCell.botLabel?.text = String(userData.id) 
         userCell.avatar?.image = #imageLiteral(resourceName: "girl")
         return cell
     }
@@ -85,7 +85,7 @@ extension ListViewController: UIScrollViewDelegate {
                 return
             }
             self.tableView.tableFooterView = createSpinnerFooter()
-            listPresenter.fetchAdditionalData()
+            listPresenter.fetchData()
         }
     }
 }

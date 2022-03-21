@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Moya
 
 protocol ListPresenterDelegate {
     var count: Int { get }
@@ -13,69 +14,59 @@ protocol ListPresenterDelegate {
     
     func getObject(at index: Int) -> User?
     func fetchData()
-    func fetchAdditionalData()
     func setViewDelegate(listViewDelegate: ListViewDelegate?)
 }
 
 class ListPresenter {
-    private let usersService: UsersService
-    private var data: [User]?
+    private var isRequestInProgress: Bool = false
+    private var users: [User]?
+    private let provider = MoyaProvider<UsersApi>()
+    private var maxId: Int?
     
     weak private var listViewDelegate : ListViewDelegate?
-    
-    init(usersService: UsersService){
-        self.usersService = usersService
-    }
 }
 
 extension ListPresenter: ListPresenterDelegate {
     var count: Int {
-        return data?.count ?? 0
+        return users?.count ?? 0
     }
     var isInProgress: Bool {
-        return usersService.isInProgress
+        return isRequestInProgress
     }
     
     func getObject(at index: Int) -> User? {
-        guard let object = data?[index] else {
+        guard let object = users?[index] else {
             return nil
         }
         return object
     }
+    
     func fetchData() {
-        guard !usersService.isInProgress else {
+        guard !isRequestInProgress else {
             return
         }
-        usersService.fetchUsersData(pagination: false, completion: { result in
-            switch result {
-            case .success(let data):
-                self.data = data
-                DispatchQueue.main.async {
-                    self.listViewDelegate?.reloadTable()
-                }
-            case .failure(let error):
-                print()
-            }
-        })
-    }
-    func fetchAdditionalData() {
-        guard !usersService.isInProgress else {
-            return
-        }
-        usersService.fetchUsersData(pagination: true, completion: { result in
+        isRequestInProgress = true
+        provider.request(.getUsers(since: maxId, perPage: 30)) { result in
+            self.isRequestInProgress = false
             DispatchQueue.main.async {
                 self.listViewDelegate?.stopSpinner()
             }
             switch result {
-            case .success(let data):
-                self.data?.append(contentsOf: data)
+            case .success(let response):
+                let newUsers = try! JSONDecoder().decode([User].self, from: response.data)
+                self.maxId = newUsers.last?.id ?? self.maxId
+                if self.users == nil {
+                    self.users = newUsers
+                } else {
+                    self.users?.append(contentsOf: newUsers)
+                }
                 DispatchQueue.main.async {
                     self.listViewDelegate?.reloadTable()
                 }
             case .failure(let error):
                 print()
             }
-        })
+        }
     }
     func setViewDelegate(listViewDelegate: ListViewDelegate?) {
         self.listViewDelegate = listViewDelegate

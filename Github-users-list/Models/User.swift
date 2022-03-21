@@ -6,10 +6,9 @@
 //
 
 struct User {
-    let name: String
-//    let avatar: String?
-//    let organization: String?
-//    let followingCount: Int?
-//    let followersCount: Int?
-//    let creationDate: Date?
+    let login: String
+    let id: Int
+    let avatar_url: String
 }
+
+extension User: Decodable { }
