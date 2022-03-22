@@ -12,14 +12,14 @@ protocol ListPresenterDelegate {
     var count: Int { get }
     var isInProgress: Bool { get }
     
-    func getObject(at index: Int) -> User?
+    func getObject(at index: Int) -> UserDataForCell?
     func fetchData()
     func setViewDelegate(listViewDelegate: ListViewDelegate?)
 }
 
 class ListPresenter {
     private var isRequestInProgress: Bool = false
-    private var users: [User]?
+    private var usersData: [UserDataForCell] = []
     private let provider = MoyaProvider<UsersApi>()
     private var maxId: Int?
     
@@ -28,17 +28,14 @@ class ListPresenter {
 
 extension ListPresenter: ListPresenterDelegate {
     var count: Int {
-        return users?.count ?? 0
+        return usersData.count
     }
     var isInProgress: Bool {
         return isRequestInProgress
     }
     
-    func getObject(at index: Int) -> User? {
-        guard let object = users?[index] else {
-            return nil
-        }
-        return object
+    func getObject(at index: Int) -> UserDataForCell? {
+        return usersData[index]
     }
     
     func fetchData() {
@@ -55,14 +52,25 @@ extension ListPresenter: ListPresenterDelegate {
             case .success(let response):
                 let newUsers = try! JSONDecoder().decode([User].self, from: response.data)
                 self.maxId = newUsers.last?.id ?? self.maxId
-                if self.users == nil {
-                    self.users = newUsers
-                } else {
-                    self.users?.append(contentsOf: newUsers)
+                let newUserData = newUsers.map{ UserDataForCell(user: $0) }
+                let oldUserDataCount = self.usersData.count
+                self.usersData.append(contentsOf: newUserData)
+                for (index, value) in newUsers.enumerated() {
+                    self.provider.request(.getAvatar(url: URL(string: value.avatar_url)!), completion: { result in
+                        switch result {
+                        case .success(let response):
+                            self.usersData[index + oldUserDataCount].avatar = UIImage(data: response.data)
+                            DispatchQueue.main.async {
+                                self.listViewDelegate?.reloadTable()
+                            }
+                            print()
+                        case .failure(let error):
+                            print()
+                        }
+                        
+                    })
                 }
-                DispatchQueue.main.async {
-                    self.listViewDelegate?.reloadTable()
-                }
+
             case .failure(let error):
                 print()
             }

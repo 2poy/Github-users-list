@@ -11,10 +11,17 @@ import Moya
 enum UsersApi {
     case getUser(id: Int)
     case getUsers(since: Int?, perPage: Int?)
+    case getAvatar(url: URL)
 }
 extension UsersApi: TargetType {
     var baseURL: URL {
-        URL(string: "https://api.github.com")!
+        switch self {
+        case .getUser(_), .getUsers(_, _):
+            return URL(string: "https://api.github.com")!
+        case .getAvatar(let url):
+            return url
+        }
+        
     }
     
     var path: String {
@@ -23,19 +30,18 @@ extension UsersApi: TargetType {
             return "/users"
         case .getUsers(_, _):
             return "/users"
+        case .getAvatar(_):
+            return ""
         }
     }
     
     var method: Moya.Method {
-        switch self {
-        case .getUser(_), .getUsers(_, _):
-            return .get
-        }
+        return .get
     }
     
     var task: Task {
         switch self {
-        case .getUser(_):
+        case .getUser(_), .getAvatar(_):
             return .requestPlain
         case .getUsers(let since, let perPage):
             switch (since, perPage) {

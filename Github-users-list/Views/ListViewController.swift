@@ -68,9 +68,9 @@ extension ListViewController: UITableViewDataSource {
         guard let userData = listPresenter.getObject(at: indexPath.row) else {
             return cell
         }
-        userCell.topLabel?.text = userData.login
-        userCell.botLabel?.text = String(userData.id) 
-        userCell.avatar?.image = #imageLiteral(resourceName: "girl")
+        userCell.topLabel?.text = userData.user.login
+        userCell.botLabel?.text = String(userData.user.id)
+        userCell.avatar?.image = userData.avatar
         return cell
     }
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
