@@ -8,8 +8,7 @@
 import UIKit
 
 protocol ListViewDelegate: AnyObject {
-    func reloadTable()
-    func stopSpinner()
+    func fetchCompleted(withErrorMessage message: String?)
 }
 
 class ListViewController: UIViewController {
@@ -45,15 +44,22 @@ class ListViewController: UIViewController {
         spinner.startAnimating()
         return footerView
     }
-
+    
+    private func showAlert(withErrorMessage erorr: String) {
+        let alert = UIAlertController(title: "Something went wrong 🥲", message: erorr, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: nil))
+        self.present(alert, animated: true, completion: nil)
+    }
 
 }
 extension ListViewController: ListViewDelegate {
-    func reloadTable() {
-        tableView.reloadData()
-    }
-    func stopSpinner() {
+    func fetchCompleted(withErrorMessage message: String?) {
         tableView.tableFooterView = nil
+        guard let message = message else {
+            tableView.reloadData()
+            return
+        }
+        showAlert(withErrorMessage: message)
     }
 }
 extension ListViewController: UITableViewDataSource {

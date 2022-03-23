@@ -24,6 +24,26 @@ class ListPresenter {
     private var maxId: Int?
     
     weak private var listViewDelegate : ListViewDelegate?
+    
+    private func fetchImages(for newUsers: [User]) {
+        let oldUserDataCount = usersData.count - newUsers.count
+        for (index, value) in newUsers.enumerated() {
+            self.provider.request(.getAvatar(url: URL(string: value.avatar_url)!), completion: { result in
+                switch result {
+                case .success(let response):
+                    self.usersData[index + oldUserDataCount].avatar = UIImage(data: response.data)
+                    DispatchQueue.main.async {
+                        self.listViewDelegate?.fetchCompleted(withErrorMessage: .none)
+                    }
+                case .failure(let error):
+                    DispatchQueue.main.async {
+                        self.listViewDelegate?.fetchCompleted(withErrorMessage: error.localizedDescription)
+                    }
+                }
+                
+            })
+        }
+    }
 }
 
 extension ListPresenter: ListPresenterDelegate {
@@ -45,34 +65,25 @@ extension ListPresenter: ListPresenterDelegate {
         isRequestInProgress = true
         provider.request(.getUsers(since: maxId, perPage: 30)) { result in
             self.isRequestInProgress = false
-            DispatchQueue.main.async {
-                self.listViewDelegate?.stopSpinner()
-            }
             switch result {
             case .success(let response):
-                let newUsers = try! JSONDecoder().decode([User].self, from: response.data)
+                guard let newUsers = try? JSONDecoder().decode([User].self, from: response.data) else {
+                    DispatchQueue.main.async {
+                        self.listViewDelegate?.fetchCompleted(withErrorMessage: "API rate limit exceeded, please wait for 1 hour")
+                    }
+                    return
+                }
                 self.maxId = newUsers.last?.id ?? self.maxId
                 let newUserData = newUsers.map{ UserDataForCell(user: $0) }
-                let oldUserDataCount = self.usersData.count
                 self.usersData.append(contentsOf: newUserData)
-                for (index, value) in newUsers.enumerated() {
-                    self.provider.request(.getAvatar(url: URL(string: value.avatar_url)!), completion: { result in
-                        switch result {
-                        case .success(let response):
-                            self.usersData[index + oldUserDataCount].avatar = UIImage(data: response.data)
-                            DispatchQueue.main.async {
-                                self.listViewDelegate?.reloadTable()
-                            }
-                            print()
-                        case .failure(let error):
-                            print()
-                        }
-                        
-                    })
+                DispatchQueue.main.async {
+                    self.listViewDelegate?.fetchCompleted(withErrorMessage: .none)
                 }
-
+                self.fetchImages(for: newUsers)
             case .failure(let error):
-                print()
+                DispatchQueue.main.async {
+                    self.listViewDelegate?.fetchCompleted(withErrorMessage: error.localizedDescription)
+                }
             }
         }
     }
