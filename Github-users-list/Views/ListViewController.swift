@@ -82,6 +82,15 @@ extension ListViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         return 70
     }
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let userInfoViewController = UserInfoViewController()
+        guard let userId = listPresenter.getObject(at: indexPath.row)?.user.login else {
+            showAlert(withErrorMessage: "Can't get user id")
+            return
+        }
+        userInfoViewController.setUpPresenter(with: userId)
+        self.present(userInfoViewController, animated: true, completion: nil)
+    }
 }
 extension ListViewController: UIScrollViewDelegate {
     func scrollViewDidScroll(_ scrollView: UIScrollView) {

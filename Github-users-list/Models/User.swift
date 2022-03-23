@@ -15,6 +15,17 @@ struct User {
 
 extension User: Decodable { }
 
+struct UserDetailed {
+    let login: String
+    let avatar_url: String
+    let email: String?
+    let company: String?
+    let following: Int
+    let followers: Int
+}
+
+extension UserDetailed: Decodable { }
+
 
 struct UserDataForCell {
     var user: User

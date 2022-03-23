@@ -9,7 +9,7 @@ import Foundation
 import Moya
 
 enum UsersApi {
-    case getUser(id: Int)
+    case getUser(userName: String)
     case getUsers(since: Int?, perPage: Int?)
     case getAvatar(url: URL)
 }
@@ -26,8 +26,8 @@ extension UsersApi: TargetType {
     
     var path: String {
         switch self {
-        case .getUser(let id):
-            return "/users"
+        case .getUser(let username):
+            return "/users/\(username)"
         case .getUsers(_, _):
             return "/users"
         case .getAvatar(_):
